@@ -92,12 +92,16 @@ def product_detail(stock_code):
     if not product:
         return "Product not found", 404
 
+    product_description = product.description.strip() if product.description else ""
+
     rec_descriptions = []
-    if model_data and product.description in model_data["similarity_matrix"].index:
-        sim_df = model_data["similarity_matrix"][product.description].sort_values(
+    rec_scores = {}
+    if model_data and product_description in model_data["similarity_matrix"].index:
+        sim_df = model_data["similarity_matrix"][product_description].sort_values(
             ascending=False
         )
         rec_descriptions = sim_df.iloc[1:11].index.tolist()
+        rec_scores = dict(zip(rec_descriptions, sim_df.iloc[1:11].values))
 
     recommendations = []
     if rec_descriptions:
@@ -121,6 +125,7 @@ def product_detail(stock_code):
                         "description": r.description,
                         "unit_price": r.unit_price,
                         "image_url": f"https://picsum.photos/seed/{r.stock_code}/300/300",
+                        "similarity_score": float(rec_scores.get(desc, 0)),
                     }
                 )
     else:
@@ -143,6 +148,7 @@ def product_detail(stock_code):
                     "description": r.description,
                     "unit_price": r.unit_price,
                     "image_url": f"https://picsum.photos/seed/{r.stock_code}/300/300",
+                    "similarity_score": None,
                 }
             )
 
