@@ -26,7 +26,8 @@
             <div class="col-md-7">
                 <h4 class="text-muted">Stock Code: {{ product.stock_code }}</h4>
                 <h2 class="mb-3">{{ product.description }}</h2>
-                <h3 class="text-primary mb-4">${{ "%.2f"|format(product.unit_price) }}</h3>
+                <h3 class="text-primary mb-2">${{ "%.2f"|format(product.unit_price) }}</h3>
+                <p class="text-muted mb-4">{{ product.purchase_count }} purchased</p>
                 <button class="btn btn-primary btn-lg">Add to Cart</button>
             </div>
         </div>
@@ -43,6 +44,7 @@
                         <div class="card-body p-2">
                             <p class="card-text small text-truncate">{{ rec.description }}</p>
                             <p class="card-text fw-bold text-primary">${{ "%.2f"|format(rec.unit_price) }}</p>
+                            <p class="card-text small text-muted mb-1">{{ rec.purchase_count }} purchased</p>
                             {% if rec.similarity_score is not none %}
                             <span class="similarity-badge">{{ "%.2f"|format(rec.similarity_score * 100) }}% similar</span>
                             {% endif %}

@@ -49,10 +49,13 @@ def products():
         Transaction.stock_code,
         func.max(Transaction.description).label("description"),
         func.max(Transaction.unit_price).label("unit_price"),
+        func.count(Transaction.id).label("purchase_count"),
     ).group_by(Transaction.stock_code)
 
     if search:
         query = query.filter(Transaction.description.ilike(f"%{search}%"))
+
+    query = query.order_by(func.count(Transaction.id).desc())
 
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
@@ -64,6 +67,7 @@ def products():
                     "stock_code": p.stock_code,
                     "description": p.description,
                     "unit_price": p.unit_price,
+                    "purchase_count": p.purchase_count,
                     "image_url": f"https://picsum.photos/seed/{p.stock_code}/300/300",
                 }
                 for p in items
@@ -83,6 +87,7 @@ def product_detail(stock_code):
             Transaction.stock_code,
             func.max(Transaction.description).label("description"),
             func.max(Transaction.unit_price).label("unit_price"),
+            func.count(Transaction.id).label("purchase_count"),
         )
         .filter(Transaction.stock_code == stock_code)
         .group_by(Transaction.stock_code)
@@ -110,6 +115,7 @@ def product_detail(stock_code):
                 Transaction.stock_code,
                 func.max(Transaction.description).label("description"),
                 func.max(Transaction.unit_price).label("unit_price"),
+                func.count(Transaction.id).label("purchase_count"),
             )
             .filter(Transaction.description.in_(rec_descriptions))
             .group_by(Transaction.stock_code)
@@ -124,6 +130,7 @@ def product_detail(stock_code):
                         "stock_code": r.stock_code,
                         "description": r.description,
                         "unit_price": r.unit_price,
+                        "purchase_count": r.purchase_count,
                         "image_url": f"https://picsum.photos/seed/{r.stock_code}/300/300",
                         "similarity_score": float(rec_scores.get(desc, 0)),
                     }
@@ -134,6 +141,7 @@ def product_detail(stock_code):
                 Transaction.stock_code,
                 func.max(Transaction.description).label("description"),
                 func.max(Transaction.unit_price).label("unit_price"),
+                func.count(Transaction.id).label("purchase_count"),
             )
             .filter(Transaction.stock_code != stock_code)
             .group_by(Transaction.stock_code)
@@ -147,6 +155,7 @@ def product_detail(stock_code):
                     "stock_code": r.stock_code,
                     "description": r.description,
                     "unit_price": r.unit_price,
+                    "purchase_count": r.purchase_count,
                     "image_url": f"https://picsum.photos/seed/{r.stock_code}/300/300",
                     "similarity_score": None,
                 }
@@ -158,6 +167,7 @@ def product_detail(stock_code):
             "stock_code": product.stock_code,
             "description": product.description,
             "unit_price": product.unit_price,
+            "purchase_count": product.purchase_count,
             "image_url": f"https://picsum.photos/seed/{product.stock_code}/400/400",
             "recommendations": recommendations,
         },
