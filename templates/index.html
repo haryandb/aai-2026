@@ -3,76 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask Monolithic Starter</title>
+    <title>Products</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <div class="container mt-5" x-data="usersData()">
-        <h1 class="mb-4">Users</h1>
-        
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>User List</span>
-                        <button class="btn btn-primary btn-sm" @click="fetchUsers()">Refresh</button>
-                    </div>
-                    <div class="card-body">
-                        <div x-show="loading" class="text-center">
-                            <div class="spinner-border" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                        </div>
-                        <div x-show="!loading && users.length === 0" class="text-center text-muted">
-                            No users found.
-                        </div>
-                        <table x-show="!loading && users.length > 0" class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Username</th>
-                                    <th>Email</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="user in users" :key="user.id">
-                                    <tr>
-                                        <td x-text="user.id"></td>
-                                        <td x-text="user.username"></td>
-                                        <td x-text="user.email"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
+    <div class="container mt-5" x-data="productStore()">
+        <h1 class="mb-4">Products</h1>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search products..." x-model="search" @keyup.enter="fetchProducts()">
+                    <button class="btn btn-outline-primary" @click="fetchProducts()">Search</button>
                 </div>
             </div>
         </div>
+
+        <div class="row" x-show="loading" style="min-height: 300px">
+            <div class="text-center mt-5"><div class="spinner-border"></div></div>
+        </div>
+
+        <div class="row" x-show="!loading && products.length === 0">
+            <div class="col-12 text-center text-muted mt-5">No products found.</div>
+        </div>
+
+        <div class="row" x-show="!loading && products.length > 0">
+            <template x-for="product in products" :key="product.stock_code">
+                <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+                    <a :href="`/products/${product.stock_code}`" class="text-decoration-none">
+                        <div class="card h-100">
+                            <img :src="product.image_url" class="card-img-top" :alt="product.description">
+                            <div class="card-body">
+                                <p class="card-text small text-truncate" x-text="product.description"></p>
+                                <p class="card-text fw-bold text-primary">$<span x-text="product.unit_price?.toFixed(2)"></span></p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </template>
+        </div>
+
+        <nav x-show="!loading && totalPages > 1" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" :class="{disabled: currentPage <= 1}">
+                    <a class="page-link" @click.prevent="goToPage(currentPage - 1)" href="#">Previous</a>
+                </li>
+                <template x-for="p in visiblePages" :key="p">
+                    <li class="page-item" :class="{active: p === currentPage}">
+                        <a class="page-link" @click.prevent="goToPage(p)" href="#" x-text="p"></a>
+                    </li>
+                </template>
+                <li class="page-item" :class="{disabled: currentPage >= totalPages}">
+                    <a class="page-link" @click.prevent="goToPage(currentPage + 1)" href="#">Next</a>
+                </li>
+            </ul>
+        </nav>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
-        function usersData() {
+        function productStore() {
             return {
-                users: [],
+                products: [],
                 loading: true,
-                error: null,
-                async fetchUsers() {
+                search: "",
+                currentPage: 1,
+                totalPages: 1,
+                get visiblePages() {
+                    const pages = [];
+                    const start = Math.max(1, this.currentPage - 2);
+                    const end = Math.min(this.totalPages, this.currentPage + 2);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    return pages;
+                },
+                async fetchProducts(page = 1) {
                     this.loading = true;
-                    this.error = null;
+                    this.currentPage = page;
                     try {
-                        const response = await fetch('/api/users');
-                        if (!response.ok) throw new Error('Failed to fetch users');
-                        this.users = await response.json();
+                        const params = new URLSearchParams({page, q: this.search});
+                        const res = await fetch(`/products?${params}`);
+                        const data = await res.json();
+                        this.products = data.products;
+                        this.totalPages = data.total_pages;
                     } catch (e) {
-                        this.error = e.message;
+                        console.error(e);
                     } finally {
                         this.loading = false;
                     }
                 },
+                goToPage(p) {
+                    if (p >= 1 && p <= this.totalPages) this.fetchProducts(p);
+                },
                 init() {
-                    this.fetchUsers();
+                    this.fetchProducts();
                 }
             }
         }
